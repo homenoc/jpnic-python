@@ -43,19 +43,12 @@ class TestJPNIC(unittest.TestCase):
             'recep_number': '',
             'deli_number': '',
             'is_pa': 'off',  # PA
-            'is_assign': 'on',  # 割り振り
-            'is_allocate_infra': 'off',  # インフラ割当
-            'is_allocate_user': 'off',  # ユーザ割当
-            'is_suba': 'off',  # SUBA
+            'is_allocate': 'on',  # 割り振り
+            'is_assign_infra': 'off',  # インフラ割当
+            'is_assign_user': 'off',  # ユーザ割当
+            'is_sub_allocate': 'off',  # SUBA
             'is_historical_pi': 'off',  # 歴史的PI
             'is_special_pi': 'off',  # 特殊用途PI
-            # 'is_pa': 'on',  # PA
-            # 'is_assign': 'on',  # 割り振り
-            # 'is_allocate_infra': 'on',  # インフラ割当
-            # 'is_allocate_user': 'on',  # ユーザ割当
-            # 'is_suba': 'on',  # SUBA
-            # 'is_historical_pi': 'on',  # 歴史的PI
-            # 'is_special_pi': 'on',  # 特殊用途PI
         }
 
         headers, table = j.get_ipv4(data_filter)

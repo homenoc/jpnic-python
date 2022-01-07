@@ -39,10 +39,10 @@ class JPNIC:
             'recepNo': data_filter['recep_number'],  # 受付番号
             'deliNo': data_filter['deli_number'],  # 審議番号
             'ipaddrKindPa': data_filter['is_pa'],  # PA
-            'regKindAllo': data_filter['is_assign'],  # 割り振り
-            'regKindEvent': data_filter['is_allocate_infra'],  # インフラ割当
-            'regKindUser': data_filter['is_allocate_user'],  # ユーザ割当
-            'regKindSubA': data_filter['is_suba'],  # SUBA
+            'regKindAllo': data_filter['is_allocate'],  # 割り振り
+            'regKindEvent': data_filter['is_assign_infra'],  # インフラ割当
+            'regKindUser': data_filter['is_assign_user'],  # ユーザ割当
+            'regKindSubA': data_filter['is_sub_allocate'],  # SUBA
             'ipaddrKindPiHistorical': data_filter['is_historical_pi'],  # 歴史的PI
             'ipaddrKindPiSpecial': data_filter['is_special_pi'],  # 特殊用途PI
             'action': '%81%40%8C%9F%8D%F5%81%40',
@@ -67,10 +67,10 @@ class JPNIC:
         for i in soup.findAll('td', attrs={'class': 'dataRow_mnt04'}):
             if count == 11:
                 count = 0
-                all_count += 1
                 if all_count > 0:
                     tables.append(tmp_row)
                     tmp_row = []
+                all_count += 1
 
             if all_count == 0:
                 headers.append(i.text.strip())
