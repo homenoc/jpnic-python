@@ -23,8 +23,6 @@ class JPNIC:
         submit_url = soup.find('form')['action']
         dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
 
-        print('+++++++++++++++++++')
-
         json = {
             'org.apache.struts.taglib.html.TOKEN': base.get_random(32),
             'destdisp': dest_disp,
