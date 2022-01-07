@@ -1,26 +1,22 @@
-import http.client
 import ssl
 import string
 import random
 import requests
 from bs4 import BeautifulSoup
+from jpnic.exception import InvalidGetDataException, InvalidSearchMenuException
 
 
-def init_access(ca_path, cert_path, key_path, function_name):
-    base_url = 'https://iphostmaster.nic.ad.jp/jpnic'
-
+def init_access(base_url, ca_path, cert_path, key_path, function_name):
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     try:
         context.load_verify_locations(ca_path)
     except Exception as e:
         print('ca: ', e)
-        return e, ''
-
+        raise e
     try:
         context.load_cert_chain(cert_path, key_path)
     except Exception as e:
-        print('cert,key: ', e)
-        return e, ''
+        raise e
 
     # cookie
     random_str = get_random(32)
@@ -34,37 +30,32 @@ def init_access(ca_path, cert_path, key_path, function_name):
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15',
     }
 
-    r = s.get(base_url + '/certmemberlogin.do', verify=ca_path, cert=cert, cookies=cookies,
-              headers=headers)
+    r = s.get(base_url + '/jpnic/certmemberlogin.do', verify=ca_path, cert=cert, cookies=cookies, headers=headers)
     # auto encode
     r.encoding = r.apparent_encoding
     print(r.status_code)
-    html = r.text
     soup = BeautifulSoup(r.text, 'html.parser')
     # メンテナンスには未対応
     if soup.find('meta')['http-equiv'] != 'Refresh':
-        return 'redirect error', ''
-    # print(soup.find('meta')['content'].partition('=')[2])
+        return 'redirect error', '', ''
     login_url = soup.find('meta')['content'].partition('=')[2]
 
-    r = s.get(base_url + '/' + login_url)
+    r = s.get(base_url + '/jpnic/' + login_url, verify=ca_path, cert=cert, cookies=cookies, headers=headers)
     # auto encode
     r.encoding = r.apparent_encoding
     soup = BeautifulSoup(r.text, 'html.parser')
-    print('----------')
-    print(soup.findAll('a'))
-    print('----------')
 
-    print(soup.findAll('a', text=function_name))
-    # print(r.status_code)
-    # print(r.text)
-    # print(r.text)
+    find_menu = soup.find('a', text=function_name)
+    if find_menu is None:
+        raise InvalidSearchMenuException(function_name)
+
+    # return find_menu['href'], s, {'cert': cert, 'cookies': cookies, 'headers': headers}
+    return find_menu['href'], s
 
 
 def get_random(n):
     dat = string.digits + string.ascii_lowercase + string.ascii_uppercase
     return ''.join([random.choice(dat) for i in range(n)])
 
-
-if __name__ == '__main__':
-    init_access()
+# if __name__ == '__main__':
+#     init_access()
