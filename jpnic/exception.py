@@ -16,3 +16,8 @@ class InvalidLoginException(InitException):
 class InvalidSearchMenuException(InitException):
     def __str__(self):
         return f"指定した操作({self.arg})は見つかりません。"
+
+
+class InvalidPostException(InitException):
+    def __str__(self):
+        return f"エラーが発生しました({self.arg})"
