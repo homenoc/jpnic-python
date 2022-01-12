@@ -345,3 +345,75 @@ class JPNIC:
                 recep_number = item.text
 
         return recep_number
+
+    def return_ipv4(self, data):
+        menu_name = '割り当て済みIPv4返却申請'
+        try:
+            menu_url, s = self.init_access(menu_name)
+        except Exception as e:
+            raise e
+        r = s.get(self.base_url + '/jpnic/' + menu_url)
+        # auto encode
+        r.encoding = r.apparent_encoding
+        soup = BeautifulSoup(r.text, 'html.parser')
+        submit_url = soup.find('form')['action']
+        token = soup.find('input', attrs={'name': 'org.apache.struts.taglib.html.TOKEN'})['value']
+        dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+        aplyid = soup.find('input', attrs={'name': 'aplyid'})['value']
+
+        json_data = {
+            'org.apache.struts.taglib.html.TOKEN': token,
+            'destdisp': dest_disp,
+            'aplyid': aplyid,
+            'ipaddr': get_value(data.get('ipaddr')),
+            'netwrk_nm': get_value(data.get('netwrk_nm')),
+            'rtn_date': get_value(data.get('rtn_date')),
+            'aply_from_addr': get_value(data.get('aply_from_addr')),
+            'aply_from_addr_confirm': get_value(data.get('aply_from_addr_confirm')),
+            'action': '申請'
+        }
+
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        err = ''
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for item in soup.findAll('font', attrs={'color': 'red'}):
+            err += item.contents[0].text.strip() + ','
+        if err != '':
+            raise InvalidPostException(err[:-1])
+
+        submit_url = soup.find('form')['action']
+        token = soup.find('input', attrs={'name': 'org.apache.struts.taglib.html.TOKEN'})['value']
+        prev_disp_id = soup.find('input', attrs={'name': 'prevDispId'})['value']
+        dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+        aplyid = soup.find('input', attrs={'name': 'aplyid'})['value']
+        json_data = {
+            'org.apache.struts.taglib.html.TOKEN': token,
+            'prevDispId': prev_disp_id,
+            'destdisp': dest_disp,
+            'aplyid': aplyid,
+            'inputconf': '確認'
+        }
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        recep_number = ""
+
+        for item in soup.findAll('td'):
+            if item.find_previous().text == '受付番号：':
+                recep_number = item.text
+
+        return recep_number
