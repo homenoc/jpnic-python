@@ -346,6 +346,117 @@ class JPNIC:
 
         return recep_number
 
+    def regist_assign_ipv6(self, data):
+        menu_name = 'IPv6割り当て報告申請　〜ユーザ用〜'
+        try:
+            menu_url, s = self.init_access(menu_name)
+        except Exception as e:
+            raise e
+        r = s.get(self.base_url + '/jpnic/' + menu_url)
+        # auto encode
+        r.encoding = r.apparent_encoding
+        soup = BeautifulSoup(r.text, 'html.parser')
+        submit_url = soup.find('form')['action']
+        dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+
+        json_data = {
+            'destdisp': dest_disp,
+            'ipaddr': get_value(data.get('ipaddr')),
+            'netwrk_nm': get_value(data.get('netwrk_nm')),
+            'infra_usr_kind': get_value(data.get('infra_usr_kind')),  # 0: インフラストラクチャ 1: ユーザネットワーク 2: 再割り振り 3:再割り振りからの割当
+            'org_nm_jp': get_value(data.get('org_nm_jp')),
+            'org_nm': get_value(data.get('org_nm')),
+            'zipcode': get_value(data.get('zipcode')),
+            'addr_jp': get_value(data.get('addr_jp')),
+            'addr': get_value(data.get('addr')),
+            'adm_hdl': get_value(data.get('adm_hdl')),
+            'tech_hdl': get_value(data.get('tech_hdl')),
+            'nmsrvs[0].nmsrv': get_value(data.get('nmsrv[0].nmsrv')),
+            'nmsrvs[1].nmsrv': get_value(data.get('nmsrv[1].nmsrv')),
+            'ntfy_mail': get_value(data.get('ntfy_mail')),
+            'deli_no': get_value(data.get('deli_no')),
+            'rtn_date': get_value(data.get('rtn_date')),
+            'aply_from_addr': get_value(data.get('aply_from_addr')),
+            'aply_from_addr_confirm': get_value(data.get('aply_from_addr_confirm')),
+            'action': '申請'
+        }
+
+        emp_count = int(get_value(data.get('emp_count')) or 0)
+        for cou in range(emp_count):
+            # [担当者情報]追加
+            json_data['action'] = '[担当者情報]追加'
+            req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+            r = s.post(
+                self.base_url + submit_url,
+                data=req_sjis,
+            )
+
+            # auto encode
+            r.encoding = r.apparent_encoding
+            soup = BeautifulSoup(r.text, 'html.parser')
+            submit_url = soup.find('form')['action']
+            dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+
+            del json_data['action']
+
+            # kind: group(グループハンドル), person(JPNICハンドル)
+            json_data['emps[' + str(cou) + '].kind'] = get_value(data.get('emp[' + str(cou) + '].kind'))
+            json_data['emps[' + str(cou) + '].jpnic_hdl'] = get_value(data.get('emp[' + str(cou) + '].jpnic_hdl'))
+            json_data['emps[' + str(cou) + '].name_jp'] = get_value(data.get('emp[' + str(cou) + '].name_jp'))
+            json_data['emps[' + str(cou) + '].name'] = get_value(data.get('emp[' + str(cou) + '].name'))
+            json_data['emps[' + str(cou) + '].email'] = get_value(data.get('emp[' + str(cou) + '].email'))
+            json_data['emps[' + str(cou) + '].org_nm_jp'] = get_value(data.get('emp[' + str(cou) + '].org_nm_jp'))
+            json_data['emps[' + str(cou) + '].org_nm'] = get_value(data.get('emp[' + str(cou) + '].org_nm'))
+            json_data['emps[' + str(cou) + '].zipcode'] = get_value(data.get('emp[' + str(cou) + '].zipcode'))
+            json_data['emps[' + str(cou) + '].addr_jp'] = get_value(data.get('emp[' + str(cou) + '].addr_jp'))
+            json_data['emps[' + str(cou) + '].addr'] = get_value(data.get('emp[' + str(cou) + '].addr'))
+            json_data['emps[' + str(cou) + '].division_jp'] = get_value(data.get('emp[' + str(cou) + '].division_jp'))
+            json_data['emps[' + str(cou) + '].division'] = get_value(data.get('emp[' + str(cou) + '].division'))
+            json_data['emps[' + str(cou) + '].division_jp'] = get_value(data.get('emp[' + str(cou) + '].division_jp'))
+            json_data['emps[' + str(cou) + '].title_jp'] = get_value(data.get('emp[' + str(cou) + '].title_jp'))
+            json_data['emps[' + str(cou) + '].title'] = get_value(data.get('emp[' + str(cou) + '].title'))
+            json_data['emps[' + str(cou) + '].phone'] = get_value(data.get('emp[' + str(cou) + '].phone'))
+            json_data['emps[' + str(cou) + '].fax'] = get_value(data.get('emp[' + str(cou) + '].fax'))
+            json_data['emps[' + str(cou) + '].ntfy_mail'] = get_value(data.get('emp[' + str(cou) + '].ntfy_mail'))
+            json_data['destdisp'] = dest_disp
+            json_data['action'] = '申請'
+
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        err = ''
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for item in soup.findAll('font', attrs={'color': 'red'}):
+            err += item.contents[0].text.strip() + ','
+        if err != '':
+            raise InvalidPostException(err[:-1])
+
+        submit_url = soup.find('form')['action']
+        json_data = {
+            'action': '確認'
+        }
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        recep_number = ""
+        for item in soup.findAll('td'):
+            if item.find_previous().text == '受付番号：':
+                recep_number = item.text
+
+        return recep_number
+
     def return_ipv4(self, data):
         menu_name = '割り当て済みIPv4返却申請'
         try:
