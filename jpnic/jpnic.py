@@ -528,3 +528,101 @@ class JPNIC:
                 recep_number = item.text
 
         return recep_number
+
+    def return_ipv6(self, data):
+        menu_name = '割り当て済みIPv6返却申請'
+        try:
+            menu_url, s = self.init_access(menu_name)
+        except Exception as e:
+            raise e
+        r = s.get(self.base_url + '/jpnic/' + menu_url)
+        # auto encode
+        r.encoding = r.apparent_encoding
+        soup = BeautifulSoup(r.text, 'html.parser')
+        submit_url = soup.findAll('form')[1]['action']
+        dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+        aplyid = soup.find('input', attrs={'name': 'aplyid'})['value']
+
+        addr = get_value(data.get('ipaddr'))
+        network_id = ''
+        for item in soup.findAll('tr', attrs={'bgcolor': '#ffffff'}):
+            if item.contents[3].text == addr:
+                network_id = item.find('input')['value']
+
+        if network_id == '':
+            raise InvalidPostException('指定のネットワークアドレスが見つかりません')
+
+        json_data = {
+            'destdisp': dest_disp,
+            'aplyid': aplyid,
+            'netwrkId': network_id,
+            'action': '確認'
+        }
+
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        err = ''
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for item in soup.findAll('font', attrs={'color': 'red'}):
+            err += item.contents[0].text.strip() + ','
+        if err != '':
+            raise InvalidPostException(err[:-1])
+
+        submit_url = soup.find('form')['action']
+        dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+        aplyid = soup.find('input', attrs={'name': 'aplyid'})['value']
+        json_data = {
+            'destdisp': dest_disp,
+            'aplyid': aplyid,
+            'netwrkId': network_id,
+            'return_date': get_value(data.get('rtn_date')),
+            'aply_from_addr': get_value(data.get('aply_from_addr')),
+            'aply_from_addr_confirm': get_value(data.get('aply_from_addr_confirm')),
+            'action': '申請'
+        }
+
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        err = ''
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for item in soup.findAll('font', attrs={'color': 'red'}):
+            err += item.contents[0].text.strip() + ','
+        if err != '':
+            raise InvalidPostException(err[:-1])
+
+        submit_url = soup.find('form')['action']
+        aplyid = soup.find('input', attrs={'name': 'aplyid'})['value']
+        json_data = {
+            'aplyid': aplyid,
+            'inputconf': '確認'
+        }
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        recep_number = ""
+
+        for item in soup.findAll('td'):
+            if item.find_previous().text == '受付番号：':
+                recep_number = item.text
+
+        return recep_number
