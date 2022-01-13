@@ -626,3 +626,88 @@ class JPNIC:
                 recep_number = item.text
 
         return recep_number
+
+    def regist_change_handle(self, data):
+        menu_name = '担当グループ（担当者）情報登録・変更'
+        try:
+            menu_url, s = self.init_access(menu_name)
+        except Exception as e:
+            raise e
+        r = s.get(self.base_url + '/jpnic/' + menu_url)
+        # auto encode
+        r.encoding = r.apparent_encoding
+        soup = BeautifulSoup(r.text, 'html.parser')
+        submit_url = soup.find('form')['action']
+        token = soup.find('input', attrs={'name': 'org.apache.struts.taglib.html.TOKEN'})['value']
+        dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+        aplyid = soup.find('input', attrs={'name': 'aplyid'})['value']
+
+        json_data = {
+            'org.apache.struts.taglib.html.TOKEN': token,
+            'destdisp': dest_disp,
+            'aplyid': aplyid,
+            'kind': get_value(data.get('kind')),  # kind: group(グループハンドル), person(JPNICハンドル)
+            'jpnic_hdl': get_value(data.get('jpnic_hdl')),
+            'name_jp': get_value(data.get('name_jp')),
+            'name': get_value(data.get('name')),
+            'email': get_value(data.get('email')),
+            'org_nm_jp': get_value(data.get('org_nm_jp')),
+            'org_nm': get_value(data.get('org_nm')),
+            'zipcode': get_value(data.get('zipcode')),
+            'addr_jp': get_value(data.get('addr_jp')),
+            'addr': get_value(data.get('addr')),
+            'division': get_value(data.get('division')),
+            'division_jp': get_value(data.get('division_jp')),
+            'title_jp': get_value(data.get('title_jp')),
+            'title': get_value(data.get('title')),
+            'phone': get_value(data.get('phone')),
+            'fax': get_value(data.get('fax')),
+            'ntfy_mail': get_value(data.get('ntfy_mail')),
+            'aply_from_addr': get_value(data.get('aply_from_addr')),
+            'aply_from_addr_confirm': get_value(data.get('aply_from_addr_confirm')),
+            'action': '申請'
+        }
+
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        err = ''
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for item in soup.findAll('font', attrs={'color': 'red'}):
+            err += item.contents[0].text.strip() + ','
+        if err != '':
+            raise InvalidPostException(err[:-1])
+
+        submit_url = soup.find('form')['action']
+        token = soup.find('input', attrs={'name': 'org.apache.struts.taglib.html.TOKEN'})['value']
+        prev_disp_id = soup.find('input', attrs={'name': 'prevDispId'})['value']
+        dest_disp = soup.find('input', attrs={'name': 'destdisp'})['value']
+        aplyid = soup.find('input', attrs={'name': 'aplyid'})['value']
+        json_data = {
+            'org.apache.struts.taglib.html.TOKEN': token,
+            'prevDispId': prev_disp_id,
+            'destdisp': dest_disp,
+            'aplyid': aplyid,
+            'inputconf': '確認'
+        }
+        req_sjis = urllib.parse.urlencode(json_data, encoding='shift-jis')
+        r = s.post(
+            self.base_url + submit_url,
+            data=req_sjis,
+        )
+        # auto encode
+        r.encoding = r.apparent_encoding
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        recep_number = ""
+        for item in soup.findAll('td'):
+            if item.find_previous().text == '受付番号：':
+                recep_number = item.text
+
+        return recep_number

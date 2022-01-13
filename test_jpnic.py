@@ -163,5 +163,22 @@ class TestJPNIC(unittest.TestCase):
         recep_number = j.return_ipv6(data)
         print('受付番号: ' + recep_number)
 
+    def regist_change_handle(self):
+        base_url = 'https://iphostmaster.nic.ad.jp'
+        ca_path = '/Users/y-yoneda/Documents/doornoc-cert/rootcacert_r3.cer'
+        cert_path = '/Users/y-yoneda/Documents/doornoc-cert/v6-cert.pem'
+        key_path = '/Users/y-yoneda/Documents/doornoc-cert/v6-prvkey.pem'
+        j = JPNIC()
+        j.base_url = base_url
+        j.ca_path = ca_path
+        j.cert_path = cert_path
+        j.key_path = key_path
+
+        json_open = open('./test-change-handle.json', 'r')
+        data = json.load(json_open)
+
+        recep_number = j.regist_change_handle(data)
+        print('受付番号: ' + recep_number)
+
 if __name__ == "__main__":
     unittest.main()
